@@ -47,7 +47,39 @@ def whatsapp_request(payload):
         return None
 
 
-def send_typing(recipient, message_id):
+def mark_as_read(message_id):
+    payload = {
+        "messaging_product": "whatsapp",
+        "status": "read",
+        "message_id": message_id,
+    }
+
+    response = whatsapp_request(payload)
+
+    if response is not None:
+        print(
+            "Read response:",
+            response.status_code,
+            response.text,
+            flush=True,
+        )
+
+
+def send_typing(recipient):
+    payload = {
+        "messaging_product": "whatsapp",
+        "status": "typing",
+    }
+
+    response = whatsapp_request(payload)
+
+    if response is not None:
+        print(
+            "Typing response:",
+            response.status_code,
+            response.text,
+            flush=True,
+        )
     """
     Show typing indicator while processing the incoming message.
     If Meta rejects it, the bot continues normally.
