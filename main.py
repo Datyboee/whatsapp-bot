@@ -34,6 +34,8 @@ def verify_webhook():
 @app.route("/webhook", methods=["POST"])
 def receive_webhook():
     data = request.get_json(silent=True) or {}
+    print("=== WEBHOOK PAYLOAD ===", flush=True)
+    print(data, flush=True)
 
     print("Webhook received:")
     print(data)
