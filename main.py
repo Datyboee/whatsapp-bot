@@ -53,6 +53,10 @@ def receive_webhook():
                         continue
 
                     # Simple automatic reply
+                    message_id = message.get("id")
+
+                    send_typing(sender, message_id)
+
                     send_message(
                         sender,
                         "Habari! 👋 Karibu WOLFE TZ. "
@@ -63,6 +67,31 @@ def receive_webhook():
         print("Error:", e)
 
     return "EVENT_RECEIVED", 200
+
+
+def send_typing(recipient, message_id):
+    headers = {
+        "Authorization": f"Bearer {ACCESS_TOKEN}",
+        "Content-Type": "application/json",
+    }
+
+    payload = {
+        "messaging_product": "whatsapp",
+        "status": "read",
+        "message_id": message_id,
+        "typing_indicator": {
+            "type": "text"
+        }
+    }
+
+    response = requests.post(
+        GRAPH_URL,
+        headers=headers,
+        json=payload,
+        timeout=20
+    )
+
+    print("Typing response:", response.status_code, response.text)
 
 
 def send_message(recipient, text):
