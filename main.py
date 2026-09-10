@@ -229,14 +229,11 @@ def receive_webhook():
 
                     # Mark message as read and request typing indicator.
                     if message_id:
-                        try:
-                            send_typing(sender, message_id)
-                        except Exception as e:
-                            print(
-                                "Typing process failed:",
-                                str(e),
-                                flush=True,
-                            )
+                        threading.Thread(
+                            target=send_typing,
+                            args=(sender, message_id),
+                            daemon=True,
+                        ).start()
 
                     # Generate reply immediately.
                     reply = create_reply(user_text)
