@@ -1,4 +1,5 @@
 import os
+import time
 import requests
 from flask import Flask, request
 
@@ -67,9 +68,44 @@ def mark_as_read(message_id):
 
 def send_typing(recipient, message_id):
     """
-    Tell WhatsApp that the message was read and request
-    the typing indicator for this incoming message.
+    Mark the message as read and show typing for 10 seconds.
     """
+    payload = {
+        "messaging_product": "whatsapp",
+        "status": "read",
+        "message_id": message_id,
+        "typing_indicator": {
+            "type": "text"
+        },
+    }
+
+    response = whatsapp_request(payload)
+
+    if response is not None:
+        print(
+            "Typing started:",
+            response.status_code,
+            response.text,
+            flush=True,
+        )
+
+    time.sleep(10)
+
+    # Stop typing by marking the message as read again.
+    stop_payload = {
+        "messaging_product": "whatsapp",
+        "status": "read",
+        "message_id": message_id,
+    }
+
+    stop_response = whatsapp_request(stop_payload)
+
+    if stop_response is not None:
+        print(
+            "Typing stopped:",
+            stop_response.status_code,
+            flush=True,
+        )
 
     payload = {
         "messaging_product": "whatsapp",
