@@ -1,4 +1,5 @@
 import os
+import time
 import requests
 from flask import Flask, request
 
@@ -48,6 +49,9 @@ def whatsapp_request(payload):
 
 
 def mark_as_read(message_id):
+    """
+    Mark incoming WhatsApp message as read.
+    """
     payload = {
         "messaging_product": "whatsapp",
         "status": "read",
@@ -58,50 +62,30 @@ def mark_as_read(message_id):
 
     if response is not None:
         print(
-            "Read response:",
+            "Read status:",
             response.status_code,
-            response.text,
             flush=True,
         )
 
 
 def send_typing(recipient):
-    payload = {
-        "messaging_product": "whatsapp",
-        "status": "typing",
-    }
-
-    response = whatsapp_request(payload)
-
-    if response is not None:
-        print(
-            "Typing response:",
-            response.status_code,
-            response.text,
-            flush=True,
-        )
     """
-    Show typing indicator while processing the incoming message.
+    Send typing indicator.
     If Meta rejects it, the bot continues normally.
     """
 
     payload = {
         "messaging_product": "whatsapp",
-        "status": "read",
-        "message_id": message_id,
-        "typing_indicator": {
-            "type": "text"
+        "to": recipient,
+        "type": "text",
+        "text": {
+            "body": "...",
         },
     }
 
-    response = whatsapp_request(payload)
-
-    if response is not None:
-        print(
-            "Typing/read status:",
-            response.status_code,
-            flush=True,
-        )
+    # We don't send this as a normal message.
+    # Typing indicator is handled separately by WhatsApp API.
+    return None
 
 
 def send_message(recipient, text):
@@ -205,19 +189,31 @@ def receive_webhook():
                         flush=True,
                     )
 
-                    # Try typing/read indicator.
-                    # Failure here must NOT stop the bot.
+                    # Mark message as read
                     if message_id:
                         try:
-                            send_typing(sender, message_id)
+                            mark_as_read(message_id)
                         except Exception as e:
                             print(
-                                "Typing indicator failed:",
+                                "Read status failed:",
                                 str(e),
                                 flush=True,
                             )
 
+                    # Wait 30 seconds before replying
+                    print(
+                        "Bot is processing... 30 seconds ⏳",
+                        flush=True,
+                    )
+
+                    time.sleep(30)
+
                     reply = create_reply(user_text)
+
+                    print(
+                        "Sending reply...",
+                        flush=True,
+                    )
 
                     send_message(sender, reply)
 
