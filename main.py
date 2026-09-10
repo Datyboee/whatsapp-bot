@@ -1,5 +1,4 @@
 import os
-import time
 import requests
 from flask import Flask, request
 
@@ -49,9 +48,6 @@ def whatsapp_request(payload):
 
 
 def mark_as_read(message_id):
-    """
-    Mark incoming WhatsApp message as read.
-    """
     payload = {
         "messaging_product": "whatsapp",
         "status": "read",
@@ -62,30 +58,37 @@ def mark_as_read(message_id):
 
     if response is not None:
         print(
-            "Read status:",
+            "Read response:",
             response.status_code,
+            response.text,
             flush=True,
         )
 
 
-def send_typing(recipient):
+def send_typing(recipient, message_id):
     """
-    Send typing indicator.
-    If Meta rejects it, the bot continues normally.
+    Tell WhatsApp that the message was read and request
+    the typing indicator for this incoming message.
     """
 
     payload = {
         "messaging_product": "whatsapp",
-        "to": recipient,
-        "type": "text",
-        "text": {
-            "body": "...",
+        "status": "read",
+        "message_id": message_id,
+        "typing_indicator": {
+            "type": "text"
         },
     }
 
-    # We don't send this as a normal message.
-    # Typing indicator is handled separately by WhatsApp API.
-    return None
+    response = whatsapp_request(payload)
+
+    if response is not None:
+        print(
+            "Typing response:",
+            response.status_code,
+            response.text,
+            flush=True,
+        )
 
 
 def send_message(recipient, text):
@@ -148,7 +151,6 @@ def receive_webhook():
     print(data, flush=True)
 
     try:
-
         for entry in data.get("entry", []):
 
             for change in entry.get("changes", []):
@@ -162,8 +164,7 @@ def receive_webhook():
                     message_type = message.get("type")
 
                     print(
-                        f"=== MESSAGE === "
-                        f"sender={sender}, "
+                        f"=== MESSAGE === sender={sender}, "
                         f"type={message_type}",
                         flush=True,
                     )
@@ -189,25 +190,18 @@ def receive_webhook():
                         flush=True,
                     )
 
-                    # Mark message as read
+                    # Mark message as read and request typing indicator.
                     if message_id:
                         try:
-                            mark_as_read(message_id)
+                            send_typing(sender, message_id)
                         except Exception as e:
                             print(
-                                "Read status failed:",
+                                "Typing process failed:",
                                 str(e),
                                 flush=True,
                             )
 
-                    # Wait 30 seconds before replying
-                    print(
-                        "Bot is processing... 30 seconds ⏳",
-                        flush=True,
-                    )
-
-                    time.sleep(30)
-
+                    # Generate reply immediately.
                     reply = create_reply(user_text)
 
                     print(
@@ -215,7 +209,23 @@ def receive_webhook():
                         flush=True,
                     )
 
-                    send_message(sender, reply)
+                    try:
+                        response = send_message(sender, reply)
+
+                        if response is not None:
+                            print(
+                                "Reply sent:",
+                                response.status_code,
+                                response.text,
+                                flush=True,
+                            )
+
+                    except Exception as e:
+                        print(
+                            "Sending reply failed:",
+                            str(e),
+                            flush=True,
+                        )
 
     except Exception as e:
 
